@@ -6,7 +6,7 @@ export const connection = async () => {
         type: 'postgres',
         host: 'localhost',
         username: 'postgres',
-        password: 'apple',
+        password: 'jklñ{}',
         database:'social',
         logging: true,
         entities: [

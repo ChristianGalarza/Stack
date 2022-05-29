@@ -54,24 +54,39 @@ export class UserResolver {
         }
     }
 
+    
+
     @Mutation(()=>User)
     async assignProfile(
         @Arg("userId") userId:number,
         @Arg("profileInput") profileInput:ProfileInput
     ){
         const u = await User.findOne({where: {id:userId}})
-        if(!u?.profileId){
+        if(u?.profileId){
             return u;
         }
         const profile = await Profile.create({
             bio:profileInput.bio,
             description:profileInput.description
         }).save();
-        const userWithProfileAssigned = await User.update(
+        const assignProfileToUser = await User.update(
             {id:userId},
             {profileId:profile.id}
         );        
-        return userWithProfileAssigned;
+        return u;
+    }
+
+    @Mutation(()=>Profile)
+    async updateProfileToUser(
+        @Arg("userId") userId:number,
+        @Arg("profileInput") profileInput:ProfileInput
+    ){
+        const u = await User.findOne({where: {id:userId}})
+        const up: any = u?.profileId;
+        const p = await Profile.findOne({where: {id:up}})
+        p!.bio=profileInput.bio
+        p!.description=profileInput.description
+        return await p!.save();
     }
 
     @Query(() => [User])
