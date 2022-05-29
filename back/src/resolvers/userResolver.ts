@@ -1,5 +1,5 @@
 
-import { Arg, Field, InputType, Mutation, Query, Resolver } from "type-graphql";
+import { Arg, Field, InputType, Mutation, ObjectType, Query, Resolver } from "type-graphql";
 import { User } from "../entity/User";
 import argon2 from 'argon2';
 import { Profile } from "../entity/Profile";
@@ -20,12 +20,39 @@ class UserRegisterInput {
 }
 
 @InputType()
+class UserLoginInput {
+    @Field()
+    username!:string;
+
+    @Field()
+    password!:string;
+}
+
+@InputType()
 class ProfileInput {
     @Field()
     bio!:string
 
     @Field()
     description!:string
+}
+
+@ObjectType()
+class FieldError{
+    @Field()
+    field:string
+
+    @Field()
+    message:string
+}
+
+@ObjectType()
+class UserResponse {
+    @Field(()=> [FieldError],{nullable:true})
+    errors?:FieldError[]
+
+    @Field(()=> User,{nullable:true})
+    user?:User
 }
 
 @Resolver()
@@ -54,7 +81,35 @@ export class UserResolver {
         }
     }
 
-    
+    @Mutation(()=> UserResponse)
+    async login(
+        @Arg("userInput") userInput:UserLoginInput
+    ): Promise<UserResponse>{
+        const u = await User.findOne({where:{username:userInput.username}})
+        if(!u){
+            return {
+                errors:[
+                    {
+                        field:"username",
+                        message:"that username does not exist"
+                    }
+                ]}
+        }
+        const validatePass = await argon2.verify(u.password,userInput.password);
+        if(!validatePass){
+            return {
+                errors:[
+                    {
+                        field:"password",
+                        message:"Incorrect Password, try it again"
+                    }
+                ]
+            }
+        }
+        return {
+            user:u
+        };
+    }
 
     @Mutation(()=>User)
     async assignProfile(
